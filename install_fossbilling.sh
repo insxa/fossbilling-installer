@@ -51,7 +51,32 @@ server {
     index index.php index.html;
 
     location / {
-        try_files \$uri \$uri/ /index.php?\$query_string;
+        try_files $uri $uri/ @rewrite;
+    }
+
+    # Block access to sensitive files and return 404 to make it indistinguishable from a missing file
+    location ~* .(ini|sh|inc|bak|twig|sql)$ {
+        return 404;
+    }
+
+    # Block access to hidden files except for .well-known
+    location ~ /\.(?!well-known\/) {
+        return 404;
+    }
+
+    # Disable PHP execution in /uploads
+    location ~* /uploads/.*\.php$ {
+        return 404;
+    }
+        
+    # Deny access to /data
+    location ~* /data/ {
+        return 404;
+    }
+
+    location @rewrite {
+        rewrite ^/page/(.*)$ /index.php?_url=/custompages/$1;
+        rewrite ^/(.*)$ /index.php?_url=/$1;
     }
 
     location ~ \.php\$ {
